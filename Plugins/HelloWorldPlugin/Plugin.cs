@@ -1,12 +1,10 @@
-﻿using System;
-
-namespace PluginSystem
+﻿namespace PluginSystem
 {
     public class Plugin
     {
         public string Execute(string input)
         {
-            return $"Hello World! (Request {input})";
+            return $"Hello World! This is mental....(Request {input})";
         }
     }
 }

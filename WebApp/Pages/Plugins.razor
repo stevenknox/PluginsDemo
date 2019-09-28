@@ -7,71 +7,69 @@
 
 <style>
     .plugin-body {
-        min-height: 600px;
+        min-height: 300px;
     }
     .plugin {
-        width: 400px;
+        width: 390px;
         float: left;
     }
+     .full-height {
+        height: 70vh;
+    }
 </style>
-
-    
-<!-- <script>
-    var ele = document.getElementById("code");
-    if(ele){
-    var editor = CodeMirror.fromTextArea(ele, {
-      lineNumbers: true,
-       mode: "csharp"
-    });
-}
-  </script> -->
-@foreach (var plugin in plugins)
-{
-    <div class="card plugin ml-5 mr-5">
-        <h5 class="card-header">
-            @plugin.Name
-        </h5>
-        <div class="card-body plugin-body">
-            <p class="card-text">
-                <ul>
-                    @if (service.PluginResponses.TryGetValue(@plugin.Name, out List<string> responses))
-                    {
-                        @foreach (var response in responses)
-                        {
-                            <li> @response</li>
-                        }
-                    }
-                </ul>
-            </p>
-        </div>
-        <div class="card-footer">
-            <button @onclick=@(() => LoadPlugin(@plugin))>Reload</button>
-        </div>
+<div class="row">
+<div class="col-md-9">
+        @foreach (var plugin in plugins)
+        {
+            <div class="card plugin ml-1">
+                <h5 class="card-header">
+                    @plugin.Name
+                    <button @onclick=@(() => LoadPlugin(@plugin)) class="float-right"><i class="oi oi-reload"></i></button>
+                </h5>
+                <div class="card-body plugin-body">
+                    <p class="card-text">
+                        <ul>
+                            @if (service.PluginResponses.TryGetValue(@plugin.Name, out List<string> responses))
+                            {
+                                @foreach (var response in responses)
+                                {
+                                    <li> @response</li>
+                                }
+                            }
+                        </ul>
+                    </p>
+                </div>
+            </div>
+        }
     </div>
-}
-<div class="card plugin ml-5 mr-5">
-    <h5 class="card-header">
-        Dynamic Plugin
-    </h5>
-    <div class="card-body plugin-body">
-        <p class="card-text">
-            Enter C# code to create a plugin 'on-the-fly' (the method must return a string)<br />
-            <textarea @bind="@syntax" cols="40" rows="10" id="code" name="code"></textarea>
-            <ul>
-                @if (service.PluginResponses.TryGetValue("DynamicPlugin", out List<string> dynamicResponses))
-                {
-                    @foreach (var response in dynamicResponses)
-                    {
-                        <li> @response</li>
-                    }
-                }
-            </ul>
-        </p>
-    </div>
-    <div class="card-footer">
-        <button @onclick=LoadDynamicPlugin>Generate Dynamic Plugin</button>
+    	
+    <div class="col-md-2">
+                <div class="card text-white bg-dark plugin ml-1">
+                    <h5 class="card-header">
+                        Dynamic Plugin
+                    </h5>
+                    <div class="card-body plugin-body full-height">
+                        <p class="card-text">
+                            Enter C# code to create a plugin 'on-the-fly' (the method must return a string)<br />
+                            <textarea @bind="@syntax" cols="40" rows="10" id="code" name="code"></textarea>
+                            <ul>
+                                @if (service.PluginResponses.TryGetValue("DynamicPlugin", out List<string> dynamicResponses))
+                                {
+                                    @foreach (var response in dynamicResponses)
+                                    {
+                                        <li> @response</li>
+                                    }
+                                }
+                            </ul>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <button @onclick=LoadDynamicPlugin>Create Dynamic Plugin</button>
+                    </div>
+            </div>
     </div>
 </div>
+
 @code {
     int iteration = 0;
     List<HostedPlugin> plugins = new List<HostedPlugin>();
@@ -79,7 +77,7 @@
         {
             public string Execute(string input)
             {
-               //return a string here
+               return ""Hello from a Dynamic Plugin!"";
             }
         }";
 
@@ -98,7 +96,7 @@
     private void LoadDynamicPlugin()
     {
         iteration++;
-        service.RunDynamicPlugin(syntax, iteration.ToString());
+        service.CreateOrRunDynamicPlugin(syntax, iteration.ToString());
     }
 
 }

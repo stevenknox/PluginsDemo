@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -13,14 +14,6 @@ namespace WebApp.PluginSystem
         private Assembly SystemRuntime = Assembly.Load(new AssemblyName("System.Runtime"));
         public Dictionary<string, List<string>> PluginResponses { get; private set; } = new Dictionary<string, List<string>>();
         public List<HostedPlugin> Plugins { get; set; } = new List<HostedPlugin>();
-
-        public string DefaultCode = @"public class Plugin
-        {
-            public string Execute(string input)
-            {
-               //return a string here
-            }
-        }";
 
         public void LoadPlugins()
         {
@@ -40,7 +33,7 @@ namespace WebApp.PluginSystem
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ExecuteAssembly(HostedPlugin plugin, string input)
         {
-            var context = new CollectibleAssemblieContext();
+            var context = new CollectibleAssemblyContext();
             var assemblyPath = Path.Combine(plugin.FilePath);
             using (var fs = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read))
             {
@@ -60,12 +53,21 @@ namespace WebApp.PluginSystem
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void ExecuteInMemoryAssembly(Compilation compilation, string input)
+        private void ExecuteInMemoryAssembly(HostedPlugin plugin, string input)
         {
-            var context = new CollectibleAssemblieContext();
+            var context = new CollectibleAssemblyContext();
 
             using (var ms = new MemoryStream())
             {
+                var compilation = CSharpCompilation.Create(plugin.Name, new[] { CSharpSyntaxTree.ParseText(plugin.Code) },
+                new[]
+                {
+                    MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Console).GetTypeInfo().Assembly.Location),
+                    MetadataReference.CreateFromFile(SystemRuntime.Location),
+                },
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
                 var cr = compilation.Emit(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 var assembly = context.LoadFromStream(ms);
@@ -75,7 +77,7 @@ namespace WebApp.PluginSystem
 
                 var instance = Activator.CreateInstance(type);
 
-                var dic = PluginResponses.GetOrCreate("DynamicPlugin");
+                var dic = PluginResponses.GetOrCreate(plugin.Name);
 
                 dic.Add(executeMethod.Invoke(instance, new object[] { input }).ToString());
             }
@@ -85,26 +87,39 @@ namespace WebApp.PluginSystem
 
         public void RunPlugin(HostedPlugin plugin, string input)
         {
-           
-            ExecuteAssembly(plugin, input);
+           if(plugin.InMemory)
+                RunDynamicPlugin(plugin, input);
+           else
+                ExecuteAssembly(plugin, input);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }
-        public void RunDynamicPlugin(string syntax, string input)
+        public void CreateOrRunDynamicPlugin(string syntax, string input)
         {
-           
-            var compilation = CSharpCompilation.Create("DynamicAssembly", new[] { CSharpSyntaxTree.ParseText(syntax) },
-            new[]
+           //if hosted assembly, just execute, else create
+           var name = $"DynamicPlugin{input}";
+           var plugin = Plugins.FirstOrDefault(f=> f.Name == name);
+            if(plugin == null)
             {
-                MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).GetTypeInfo().Assembly.Location),
-                MetadataReference.CreateFromFile(SystemRuntime.Location),
-            },
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-             ExecuteInMemoryAssembly(compilation, input);
+                plugin = new HostedPlugin();
+                plugin.Name = name;
+                plugin.Code = syntax;
+
+            }
+
+            Plugins.Add(plugin);
            
+             ExecuteInMemoryAssembly(plugin, input);
+           
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        public void RunDynamicPlugin(HostedPlugin plugin, string input)
+        {
+            ExecuteInMemoryAssembly(plugin, input);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();

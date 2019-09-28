@@ -1,4 +1,6 @@
-﻿namespace WebApp.PluginSystem
+﻿using Microsoft.CodeAnalysis.CSharp;
+
+namespace WebApp.PluginSystem
 {
     public class HostedPlugin
     {

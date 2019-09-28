@@ -3,9 +3,9 @@ using System.Runtime.Loader;
 
 namespace WebApp.PluginSystem
 {
-    public class CollectibleAssemblieContext : AssemblyLoadContext
+    public class CollectibleAssemblyContext : AssemblyLoadContext
     {
-        public CollectibleAssemblieContext() : base(isCollectible: true)
+        public CollectibleAssemblyContext() : base(isCollectible: true)
         {
         }
 
