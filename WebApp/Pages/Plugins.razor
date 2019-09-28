@@ -1,0 +1,104 @@
+﻿@page "/plugins"
+
+@using WebApp.Data
+@inject PluginService service
+
+<h1>Plugins</h1>
+
+<style>
+    .plugin-body {
+        min-height: 600px;
+    }
+    .plugin {
+        width: 400px;
+        float: left;
+    }
+</style>
+
+    
+<!-- <script>
+    var ele = document.getElementById("code");
+    if(ele){
+    var editor = CodeMirror.fromTextArea(ele, {
+      lineNumbers: true,
+       mode: "csharp"
+    });
+}
+  </script> -->
+@foreach (var plugin in plugins)
+{
+    <div class="card plugin ml-5 mr-5">
+        <h5 class="card-header">
+            @plugin.Name
+        </h5>
+        <div class="card-body plugin-body">
+            <p class="card-text">
+                <ul>
+                    @if (service.PluginResponses.TryGetValue(@plugin.Name, out List<string> responses))
+                    {
+                        @foreach (var response in responses)
+                        {
+                            <li> @response</li>
+                        }
+                    }
+                </ul>
+            </p>
+        </div>
+        <div class="card-footer">
+            <button @onclick=@(() => LoadPlugin(@plugin))>Reload</button>
+        </div>
+    </div>
+}
+<div class="card plugin ml-5 mr-5">
+    <h5 class="card-header">
+        Dynamic Plugin
+    </h5>
+    <div class="card-body plugin-body">
+        <p class="card-text">
+            Enter C# code to create a plugin 'on-the-fly' (the method must return a string)<br />
+            <textarea @bind="@syntax" cols="40" rows="10" id="code" name="code"></textarea>
+            <ul>
+                @if (service.PluginResponses.TryGetValue("DynamicPlugin", out List<string> dynamicResponses))
+                {
+                    @foreach (var response in dynamicResponses)
+                    {
+                        <li> @response</li>
+                    }
+                }
+            </ul>
+        </p>
+    </div>
+    <div class="card-footer">
+        <button @onclick=LoadDynamicPlugin>Generate Dynamic Plugin</button>
+    </div>
+</div>
+@code {
+    int iteration = 0;
+    List<HostedPlugin> plugins = new List<HostedPlugin>();
+    public string syntax { get; set; } =  @"public class Plugin
+        {
+            public string Execute(string input)
+            {
+               //return a string here
+            }
+        }";
+
+    protected override void OnInitialized()
+    {
+        service.LoadPlugins();
+        plugins = service.Plugins;
+    }
+
+    private void LoadPlugin(HostedPlugin currentPlugin)
+    {
+        iteration++;
+        service.RunPlugin(currentPlugin, iteration.ToString());
+    }
+
+    private void LoadDynamicPlugin()
+    {
+        iteration++;
+        service.RunDynamicPlugin(syntax, iteration.ToString());
+    }
+
+}

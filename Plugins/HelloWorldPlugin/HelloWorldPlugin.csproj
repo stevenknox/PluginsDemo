@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+     <CopyDestionationPath>..\..\WebApp\Plugins</CopyDestionationPath>
+  </PropertyGroup>
+
+ <Target Name="CopyOutputToDestination" AfterTargets="AfterBuild">
+
+    <ItemGroup>
+      <OutputFiles Include="$(OutDir)**\*"></OutputFiles>
+    </ItemGroup>
+
+    <Message Text="Copying output file to destination: @(OutputFiles)" Importance="high" />
+
+    <Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(CopyDestionationPath)\$(ProjectName)\%(RecursiveDir)" OverwriteReadOnlyFiles="true"></Copy>
+
+  </Target>
+</Project>
