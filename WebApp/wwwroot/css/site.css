@@ -148,3 +148,14 @@ app {
         display: block;
     }
 }
+
+.plugin-body {
+    min-height: 300px;
+}
+.plugin {
+    width: 390px;
+    float: left;
+}
+ .full-height {
+    height: 70vh;
+}

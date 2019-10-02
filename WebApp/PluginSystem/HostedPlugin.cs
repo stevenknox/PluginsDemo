@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
-
-namespace WebApp.PluginSystem
+﻿namespace WebApp.PluginSystem
 {
     public class HostedPlugin
     {

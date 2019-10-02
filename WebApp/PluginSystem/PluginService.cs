@@ -21,10 +21,15 @@ namespace WebApp.PluginSystem
 
             foreach (var pluginfolder in Directory.EnumerateDirectories(assembliesPath))
             {
-                Plugins.Add(new HostedPlugin {
-                    Name = Path.GetFileName(pluginfolder),
-                    FilePath = Path.Combine(pluginfolder, $"{Path.GetFileName(pluginfolder)}.dll"),
-                });
+                var pluginName = Path.GetFileName(pluginfolder);
+                if (Plugins.FirstOrDefault(f => f.Name == pluginName) == null)
+                {
+                    Plugins.Add(new HostedPlugin
+                    {
+                        Name = pluginName,
+                        FilePath = Path.Combine(pluginfolder, $"{pluginName}.dll"),
+                    });
+                }
             }
         }
 
@@ -87,20 +92,20 @@ namespace WebApp.PluginSystem
 
         public void RunPlugin(HostedPlugin plugin, string input)
         {
-           if(plugin.InMemory)
+            if (plugin.InMemory)
                 RunDynamicPlugin(plugin, input);
-           else
+            else
                 ExecuteAssembly(plugin, input);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            RunGarbageCollection();
         }
+
         public void CreateOrRunDynamicPlugin(string syntax, string input)
         {
-           //if hosted assembly, just execute, else create
-           var name = $"DynamicPlugin{input}";
-           var plugin = Plugins.FirstOrDefault(f=> f.Name == name);
-            if(plugin == null)
+            //if hosted assembly, just execute, else create
+            var name = $"DynamicPlugin{input}";
+            var plugin = Plugins.FirstOrDefault(f => f.Name == name);
+            if (plugin == null)
             {
 
                 plugin = new HostedPlugin();
@@ -110,21 +115,31 @@ namespace WebApp.PluginSystem
             }
 
             Plugins.Add(plugin);
-           
-             ExecuteInMemoryAssembly(plugin, input);
-           
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            ExecuteInMemoryAssembly(plugin, input);
+
+            RunGarbageCollection();
         }
         public void RunDynamicPlugin(HostedPlugin plugin, string input)
         {
             ExecuteInMemoryAssembly(plugin, input);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            RunGarbageCollection();
         }
 
+
+        private static void RunGarbageCollection()
+        {
+            try
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            catch (System.Exception)
+            {
+                //sometimes GC.Collet/WaitForPendingFinalizers crashes, just ignore for this blog post
+            }
+        }
 
     }
 }
